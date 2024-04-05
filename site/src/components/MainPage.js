@@ -43,7 +43,7 @@ function MainPage() {
   };
 
   const handleSubmit = () => {
-    const distance = calculateDistance(clubs[turnCount].Latitude, clubs[turnCount].Longitude, markerPosition.lat, markerPosition.lng)
+    const distance = calculateDistance(clubs[turnCount].venueData.latitude, clubs[turnCount].venueData.longitude, markerPosition.lat, markerPosition.lng)
     setScore((currentScore => currentScore + distance))
     setTurnCount((currentTurn => currentTurn + 1))
   };
@@ -57,7 +57,7 @@ function MainPage() {
         Button
       </h2>
       <h3 style={{ textAlign: "center" }}>
-        Current Club: {clubs.length != 0 && <strong>{clubs[turnCount].Team}</strong>}
+        Current Club: {clubs.length != 0 && <strong>{clubs[turnCount].clubData.label}</strong>}
       </h3>
       <div style={{ width: "50%", height: "400px", margin: "auto" }}>
         <MapContainer

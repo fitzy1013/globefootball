@@ -13,31 +13,20 @@ cron.schedule('0 0 * * *', () => {
 
 // Function to generate 5 random objects from the database
 async function generateRandomObjects() {
-    try {
-      const countriesCount = {};
-      const teams = await Clubs.find();
-      const randomTeams = [];
-      for (const team of teams) {
-        const country = team.Country;
-        if (!countriesCount[country]) {
-          countriesCount[country] = 0;
-        }
-        if (countriesCount[country] < 2) {
-          randomTeams.push(team);
-          countriesCount[country]++;
-        }
+  try {
+    const count = await Clubs.countDocuments();
+    const randomIndexes = [];
+    while (randomIndexes.length < 5) {
+      const randomIndex = Math.floor(Math.random() * count);
+      if (!randomIndexes.includes(randomIndex)) {
+        randomIndexes.push(randomIndex);
       }
-      // Shuffle the random teams array
-      for (let i = randomTeams.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [randomTeams[i], randomTeams[j]] = [randomTeams[j], randomTeams[i]];
-      }
-      // Select the first 5 teams (or less if there are fewer than 5)
-      randomObjects = randomTeams.slice(0, Math.min(randomTeams.length, 5));
-    } catch (error) {
-      console.error('Error generating random teams:', error);
     }
+    randomObjects = await Clubs.find().skip(randomIndexes[0]).limit(5);
+  } catch (error) {
+    console.error('Error generating random objects:', error);
   }
+}
 
 // Get all Clubs
 router.get('/', async (req, res) => {
