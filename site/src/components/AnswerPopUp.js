@@ -12,7 +12,6 @@ import L from "leaflet";
 
 const AnswerPopUp = ({ open, handleClose, customMarkerIcon, venueCoordinates, markerCoordinates, distance }) => {
   const mapRef = useRef(null);
-  console.log(distance)
 
   useEffect(() => {
     if (mapRef.current && venueCoordinates && markerCoordinates) {
@@ -23,7 +22,7 @@ const AnswerPopUp = ({ open, handleClose, customMarkerIcon, venueCoordinates, ma
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth={true} maxWidth={'xl'}>
-      <DialogTitle>Results</DialogTitle>
+      <DialogTitle style={{ backgroundColor: '#2196f3', color: '#fff' }}>Results</DialogTitle>
       <DialogContent>
         <h2>Your answer was {distance}km away from the answer</h2>
         <div style={{ width: "100%", height: "80vh" }}>

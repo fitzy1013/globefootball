@@ -1,26 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { Draggable } from "leaflet";
-import "leaflet/dist/leaflet.css";
-import axios from "axios";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import { getDistance } from "geolib";
-import L from "leaflet"; // import leaflet directly
+import axios from "axios";
+import L from "leaflet";
 import AnswerPopUp from "./AnswerPopUp";
 
-// Import marker icon image
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIconRetina from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
-// Define custom marker icon
 const customMarkerIcon = L.icon({
   iconUrl: markerIcon,
   iconRetinaUrl: markerIconRetina,
   shadowUrl: markerShadow,
-  iconSize: [25, 41], // size of the icon
-  iconAnchor: [12, 41], // point of the icon which will correspond to marker's location
-  popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
-  shadowSize: [41, 41], // size of the shadow
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
 function MainPage() {
@@ -31,10 +27,6 @@ function MainPage() {
   const [score, setScore] = useState(0);
   const [open, setOpen] = useState(false);
   const [distance, setDistance] = useState(0);
-  console.log(clubs);
-  console.log(markerPosition);
-  console.log(turnCount);
-  console.log(score);
 
   useEffect(() => {
     if (!open && prevOpen.current) {
@@ -55,10 +47,6 @@ function MainPage() {
   };
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    console.log(lat1);
-    console.log(lon1);
-    console.log(lat2);
-    console.log(lon2);
     const distance = getDistance(
       { latitude: lat1, longitude: lon1 },
       { latitude: lat2, longitude: lon2 }
@@ -66,11 +54,10 @@ function MainPage() {
     return distance / 1000; // Convert meters to kilometers
   };
 
-  useState(() => {
+  useEffect(() => {
     axios
       .get("http://localhost:3003/api/clubs/random-clubs")
       .then((response) => {
-        console.log(response);
         setClubs(response.data);
       });
   }, []);
@@ -89,31 +76,29 @@ function MainPage() {
       markerPosition.lng
     );
     setDistance(distance_temp);
-    console.log(distance)
     handleOpen();
   };
 
   return (
-    <div>
-      <h1 style={{ textAlign: "center" }}>GlobeFootball</h1>
-      <h3 style={{ textAlign: "center" }}>
-        Turn: {turnCount + 1}/5 Current Score: {score}
-      </h3>
-      <h2 style={{ textAlign: "center" }}>
-        Drag Marker to where the Clubs Stadium is Located and Hit the Submit
-        Button
-      </h2>
-      <h3 style={{ textAlign: "center" }}>
+    <div style={{ textAlign: "center", padding: "20px", backgroundColor: "#f0f0f0", minHeight: "100vh" }}>
+      <h1 style={{ marginBottom: "20px" }}>GlobeFootball</h1>
+      <p style={{ marginBottom: "20px", fontSize: "18px" }}>
+        Drag the marker to where the club's stadium is located and hit the "Submit" button.
+      </p>
+      <p style={{ marginBottom: "20px", fontSize: "16px" }}>
+        Turn: {turnCount + 1}/5 &nbsp;|&nbsp; Current Score: {score}
+      </p>
+      <p style={{ marginBottom: "20px", fontSize: "18px" }}>
         Current Club:{" "}
-        {clubs.length != 0 && (
+        {clubs.length !== 0 && (
           <strong>{clubs[turnCount].clubData.label}</strong>
         )}
-      </h3>
-      <div style={{ width: "50%", height: "400px", margin: "auto" }}>
+      </p>
+      <div style={{ width: "80%", margin: "auto", marginBottom: "20px" }}>
         <MapContainer
           center={[51.505, -0.09]}
           zoom={4}
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%", height: "400px" }}
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <Marker
@@ -127,9 +112,7 @@ function MainPage() {
           ></Marker>
         </MapContainer>
       </div>
-      <div style={{ textAlign: "center", marginTop: "20px" }}>
-        <button onClick={handleSubmit}>Submit Answer</button>
-      </div>
+      <button style={{ padding: "10px 20px", fontSize: "16px", cursor: "pointer" }} onClick={handleSubmit}>Submit Answer</button>
       {open && (
         <AnswerPopUp
           open={open}
