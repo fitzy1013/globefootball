@@ -27,11 +27,24 @@ function MainPage() {
   const [score, setScore] = useState(0);
   const [open, setOpen] = useState(false);
   const [distance, setDistance] = useState(0);
+  const [roundComplete, setRoundComplete] = useState(false);
+  const [venueCoords, setVenueCoords] = useState([])
+  const [markerCoords, setMarkerCoords] = useState([])
+
+  console.log(venueCoords)
+  console.log(markerCoords)
+
+  console.log(turnCount);
 
   useEffect(() => {
     if (!open && prevOpen.current) {
       setScore((currentScore) => currentScore + distance);
-      setTurnCount((currentTurn) => currentTurn + 1);
+      if (turnCount < 4) {
+        setTurnCount((currentTurn) => currentTurn + 1);
+      } else {
+        setRoundComplete(true);
+        handleOpen();
+      }
     }
     prevOpen.current = open;
   }, [open]);
@@ -69,6 +82,8 @@ function MainPage() {
   };
 
   const handleSubmit = () => {
+    setVenueCoords(current => [...current, [clubs[turnCount].venueData.latitude, clubs[turnCount].venueData.longitude]])
+    setMarkerCoords(current => [...current, [markerPosition.lat, markerPosition.lng]])
     const distance_temp = calculateDistance(
       clubs[turnCount].venueData.latitude,
       clubs[turnCount].venueData.longitude,
@@ -80,10 +95,18 @@ function MainPage() {
   };
 
   return (
-    <div style={{ textAlign: "center", padding: "20px", backgroundColor: "#f0f0f0", minHeight: "100vh" }}>
+    <div
+      style={{
+        textAlign: "center",
+        padding: "20px",
+        backgroundColor: "#f0f0f0",
+        minHeight: "100vh",
+      }}
+    >
       <h1 style={{ marginBottom: "20px" }}>GlobeFootball</h1>
       <p style={{ marginBottom: "20px", fontSize: "18px" }}>
-        Drag the marker to where the club's stadium is located and hit the "Submit" button.
+        Drag the marker to where the club's stadium is located and hit the
+        "Submit" button.
       </p>
       <p style={{ marginBottom: "20px", fontSize: "16px" }}>
         Turn: {turnCount + 1}/5 &nbsp;|&nbsp; Current Score: {score}
@@ -112,18 +135,35 @@ function MainPage() {
           ></Marker>
         </MapContainer>
       </div>
-      <button style={{ padding: "10px 20px", fontSize: "16px", cursor: "pointer" }} onClick={handleSubmit}>Submit Answer</button>
-      {open && (
+      <button
+        style={{ padding: "10px 20px", fontSize: "16px", cursor: "pointer" }}
+        onClick={handleSubmit}
+      >
+        Submit Answer
+      </button>
+      {(open && !roundComplete) && (
         <AnswerPopUp
           open={open}
           handleClose={handleClose}
           customMarkerIcon={customMarkerIcon}
           venueCoordinates={[
-            clubs[turnCount].venueData.latitude,
-            clubs[turnCount].venueData.longitude,
+            [
+              clubs[turnCount].venueData.latitude,
+              clubs[turnCount].venueData.longitude,
+            ],
           ]}
-          markerCoordinates={markerPosition}
+          markerCoordinates={[markerPosition]}
           distance={distance}
+        />
+      )}
+      {(open && roundComplete) && (
+        <AnswerPopUp
+          open={open}
+          handleClose={handleClose}
+          customMarkerIcon={customMarkerIcon}
+          venueCoordinates={venueCoords}
+          markerCoordinates={markerCoords}
+          distance={score}
         />
       )}
     </div>

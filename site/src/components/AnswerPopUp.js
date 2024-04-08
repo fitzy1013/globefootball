@@ -6,23 +6,54 @@ import {
   DialogActions,
   Button,
 } from "@mui/material";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  useMap,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-const AnswerPopUp = ({ open, handleClose, customMarkerIcon, venueCoordinates, markerCoordinates, distance }) => {
+const AnswerPopUp = ({
+  open,
+  handleClose,
+  customMarkerIcon,
+  venueCoordinates,
+  markerCoordinates,
+  distance,
+}) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
     if (mapRef.current && venueCoordinates && markerCoordinates) {
-      const bounds = L.latLngBounds([venueCoordinates, markerCoordinates]);
-      mapRef.current.fitBounds(bounds);
+      let bounds = L.latLngBounds();
+
+      venueCoordinates.forEach((venueCoord) => {
+        bounds.extend(venueCoord);
+      });
+
+      markerCoordinates.forEach((markerCoord) => {
+        bounds.extend(markerCoord);
+      });
+
+      const padding = 0.2;
+      mapRef.current.fitBounds(bounds.pad(padding));
     }
   }, [venueCoordinates, markerCoordinates]);
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth={true} maxWidth={'xl'}>
-      <DialogTitle style={{ backgroundColor: '#2196f3', color: '#fff' }}>Results</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth={true}
+      maxWidth={"xl"}
+    >
+      <DialogTitle style={{ backgroundColor: "#2196f3", color: "#fff" }}>
+        Results
+      </DialogTitle>
       <DialogContent>
         <h2>Your answer was {distance}km away from the answer</h2>
         <div style={{ width: "100%", height: "80vh" }}>
@@ -30,12 +61,16 @@ const AnswerPopUp = ({ open, handleClose, customMarkerIcon, venueCoordinates, ma
             center={[51.505, -0.09]}
             zoom={4}
             style={{ width: "100%", height: "100%" }}
+            ref={mapRef}
           >
-            <InnerMap
-              venueCoordinates={venueCoordinates}
-              markerCoordinates={markerCoordinates}
-              customMarkerIcon={customMarkerIcon}
-            />
+            {venueCoordinates.map((venueCoord, index) => (
+              <InnerMap
+                key={`map${index}`}
+                venueCoordinates={venueCoord}
+                markerCoordinates={markerCoordinates[index]}
+                customMarkerIcon={customMarkerIcon}
+              />
+            ))}
           </MapContainer>
         </div>
       </DialogContent>
@@ -48,12 +83,16 @@ const AnswerPopUp = ({ open, handleClose, customMarkerIcon, venueCoordinates, ma
   );
 };
 
-const InnerMap = ({ venueCoordinates, markerCoordinates, customMarkerIcon }) => {
+const InnerMap = ({
+  venueCoordinates,
+  markerCoordinates,
+  customMarkerIcon,
+}) => {
   const map = useMap();
 
   useEffect(() => {
     if (venueCoordinates && markerCoordinates) {
-      const bounds = L.latLngBounds([venueCoordinates, markerCoordinates]);
+      let bounds = L.latLngBounds([venueCoordinates, markerCoordinates]);
       map.fitBounds(bounds);
     }
   }, [map, venueCoordinates, markerCoordinates]);
