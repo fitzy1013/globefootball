@@ -55,7 +55,7 @@ const AnswerPopUp = ({
         Results
       </DialogTitle>
       <DialogContent>
-        <h2>Your answer was {distance}km away from the answer</h2>
+        <h2>Your {venueCoordinates.length > 2 && "total"} distance was {distance}km away from the answer</h2>
         <div style={{ width: "100%", height: "80vh" }}>
           <MapContainer
             center={[51.505, -0.09]}

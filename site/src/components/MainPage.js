@@ -52,7 +52,9 @@ function MainPage() {
   const prevOpen = useRef(open);
 
   const handleClose = () => {
-    setOpen(false);
+    if (turnCount >= 4) {
+      setOpen(true);
+    }
   };
 
   const handleOpen = () => {
