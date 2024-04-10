@@ -4,6 +4,7 @@ import { getDistance } from "geolib";
 import axios from "axios";
 import L from "leaflet";
 import AnswerPopUp from "./AnswerPopUp";
+import Cookies from "js-cookie"; 
 
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIconRetina from "leaflet/dist/images/marker-icon-2x.png";
@@ -28,32 +29,67 @@ function MainPage() {
   const [open, setOpen] = useState(false);
   const [distance, setDistance] = useState(0);
   const [roundComplete, setRoundComplete] = useState(false);
-  const [venueCoords, setVenueCoords] = useState([])
-  const [markerCoords, setMarkerCoords] = useState([])
+  const [venueCoords, setVenueCoords] = useState([]);
+  const [markerCoords, setMarkerCoords] = useState([]);
+  const [statisticsOpen, setStatisticsOpen] = useState(false);
 
-  console.log(venueCoords)
-  console.log(markerCoords)
-
-  console.log(turnCount);
-
-  useEffect(() => {
-    if (!open && prevOpen.current) {
-      setScore((currentScore) => currentScore + distance);
-      if (turnCount < 4) {
-        setTurnCount((currentTurn) => currentTurn + 1);
-      } else {
-        setRoundComplete(true);
-        handleOpen();
-      }
+// Load scores and dates from cookies on component mount
+useEffect(() => {
+  const cookieScores = Cookies.get("scores");
+  const cookieMarkerCoords = Cookies.get("markerCoords");
+  const cookieVenueCoords = Cookies.get("venueCoords");
+  var playedToday = false;
+  if (cookieScores) {
+    const parsedScores = JSON.parse(cookieScores);
+    console.log("Scores:", parsedScores);
+    if (parsedScores.length > 0) {
+      const latestEntryDate = new Date(parsedScores[parsedScores.length - 1].date);
+      const today = new Date();
+      console.log(today)
+      console.log(latestEntryDate)
+      playedToday = latestEntryDate.toDateString() == today.toDateString();
+      console.log("Is latest entry Today? ", playedToday);
     }
-    prevOpen.current = open;
-  }, [open]);
+  }
+    if (cookieMarkerCoords && cookieVenueCoords) {
+      console.log(cookieMarkerCoords)
+      console.log(cookieVenueCoords)
+      const parsedMarkerCoords = JSON.parse(cookieMarkerCoords);
+      const parsedVenueCoords = JSON.parse(cookieVenueCoords);
+      console.log("Venue Coords: ", parsedVenueCoords)
+      console.log("Marker Coords: ", parsedMarkerCoords)
+   }
+
+}, []);
+
+// ...
+
+useEffect(() => {
+  if (!open && prevOpen.current) {
+    setScore((currentScore) => currentScore + distance);
+    if (turnCount < 4) {
+      setTurnCount((currentTurn) => currentTurn + 1);
+    } else {
+      setRoundComplete(true);
+      handleOpen();
+      // Save score and date to cookies when round completes
+      const scores = Cookies.get("scores");
+      const currentDate = new Date();
+      const newScores = [...(scores ? JSON.parse(scores) : []), { score, date: currentDate }];
+      Cookies.set("scores", JSON.stringify(newScores));
+    }
+  }
+  prevOpen.current = open;
+}, [open]);
+
 
   const prevOpen = useRef(open);
 
   const handleClose = () => {
     if (turnCount >= 4) {
-      setOpen(true);
+      setOpen(false);
+    } else {
+      setOpen(false);
     }
   };
 
@@ -84,8 +120,16 @@ function MainPage() {
   };
 
   const handleSubmit = () => {
-    setVenueCoords(current => [...current, [clubs[turnCount].venueData.latitude, clubs[turnCount].venueData.longitude]])
-    setMarkerCoords(current => [...current, [markerPosition.lat, markerPosition.lng]])
+    const tempVenueCoords = [...venueCoords, {lat: clubs[turnCount].venueData.latitude, lng: clubs[turnCount].venueData.longitude}];
+    console.log(tempVenueCoords);
+    setVenueCoords(tempVenueCoords);
+    Cookies.set("venueCoords", JSON.stringify(tempVenueCoords));
+    
+    const tempMarkerCoords = [...markerCoords, {lat: markerPosition.lat, lng: markerPosition.lng}];
+    setMarkerCoords(tempMarkerCoords);
+    Cookies.set("markerCoords", JSON.stringify(tempMarkerCoords));
+    
+    
     const distance_temp = calculateDistance(
       clubs[turnCount].venueData.latitude,
       clubs[turnCount].venueData.longitude,
