@@ -4,7 +4,6 @@ import { getDistance } from "geolib";
 import axios from "axios";
 import L from "leaflet";
 import AnswerPopUp from "./AnswerPopUp";
-import Cookies from "js-cookie"; 
 
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIconRetina from "leaflet/dist/images/marker-icon-2x.png";
@@ -33,69 +32,47 @@ function MainPage() {
   const [markerCoords, setMarkerCoords] = useState([]);
   const [statisticsOpen, setStatisticsOpen] = useState(false);
 
-// Load scores and dates from cookies on component mount
-useEffect(() => {
-  const cookieScores = Cookies.get("scores");
-  const cookieMarkerCoords = Cookies.get("markerCoords");
-  const cookieVenueCoords = Cookies.get("venueCoords");
-  var playedToday = false;
-  if (cookieScores) {
-    const parsedScores = JSON.parse(cookieScores);
-    console.log("Scores:", parsedScores);
-    if (parsedScores.length > 0) {
-      const latestEntryDate = new Date(parsedScores[parsedScores.length - 1].date);
-      const today = new Date();
-      console.log(today)
-      console.log(latestEntryDate)
-      playedToday = latestEntryDate.toDateString() == today.toDateString();
-      console.log("Is latest entry Today? ", playedToday);
+  useEffect(() => {
+    axios
+      .get("http://localhost:3003/api/clubs/random-clubs")
+      .then((response) => {
+        setClubs(response.data);
+      });
+
+    const storedScores = JSON.parse(localStorage.getItem("score")) || [];
+    console.log("Stored Scores:", storedScores);
+
+    const localStorageVenueCoords = localStorage.getItem("venueCoords");
+    const localStorageMarkerCoords = localStorage.getItem("markerCoords");
+    const localStorageScore = localStorage.getItem("score");
+
+    if (localStorageVenueCoords && localStorageMarkerCoords) {
+      const parsedVenueCoords = JSON.parse(localStorageVenueCoords);
+      const parsedMarkerCoords = JSON.parse(localStorageMarkerCoords);
+
+      setVenueCoords(parsedVenueCoords);
+      setMarkerCoords(parsedMarkerCoords);
+      setTurnCount(parsedMarkerCoords.length);
     }
-  }
-    if (cookieMarkerCoords && cookieVenueCoords) {
-      console.log(cookieMarkerCoords)
-      console.log(cookieVenueCoords)
-      const parsedMarkerCoords = JSON.parse(cookieMarkerCoords);
-      const parsedVenueCoords = JSON.parse(cookieVenueCoords);
-      console.log("Venue Coords: ", parsedVenueCoords)
-      console.log("Marker Coords: ", parsedMarkerCoords)
-   }
-
-}, []);
-
-// ...
-
-useEffect(() => {
-  if (!open && prevOpen.current) {
-    setScore((currentScore) => currentScore + distance);
-    if (turnCount < 4) {
-      setTurnCount((currentTurn) => currentTurn + 1);
-    } else {
-      setRoundComplete(true);
-      handleOpen();
-      // Save score and date to cookies when round completes
-      const scores = Cookies.get("scores");
-      const currentDate = new Date();
-      const newScores = [...(scores ? JSON.parse(scores) : []), { score, date: currentDate }];
-      Cookies.set("scores", JSON.stringify(newScores));
-    }
-  }
-  prevOpen.current = open;
-}, [open]);
-
-
-  const prevOpen = useRef(open);
+  }, []);
 
   const handleClose = () => {
     if (turnCount >= 4) {
-      setOpen(false);
-    } else {
-      setOpen(false);
+      setRoundComplete(false);
     }
+    setOpen(false);
   };
 
   const handleOpen = () => {
     setOpen(true);
   };
+
+  const updateScores = (newScore) => {
+    const currentDate = new Date().toLocaleDateString();
+    const storedScores = JSON.parse(localStorage.getItem("scores")) || [];
+    const updatedScores = [...storedScores, { score: newScore, date: currentDate }];
+    localStorage.setItem("scores", JSON.stringify(updatedScores));
+  }
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const distance = getDistance(
@@ -106,12 +83,21 @@ useEffect(() => {
   };
 
   useEffect(() => {
-    axios
-      .get("http://localhost:3003/api/clubs/random-clubs")
-      .then((response) => {
-        setClubs(response.data);
-      });
-  }, []);
+    if (!open && prevOpen.current) {
+      if (turnCount < 4) {
+        updateScores(distance);
+        setScore((currentScore) => currentScore + distance);
+        setTurnCount((currentTurn) => currentTurn + 1);
+        
+      } else {
+        setRoundComplete(true);
+        setOpen(true);
+      }
+    }
+    prevOpen.current = open;
+  }, [open]);
+
+  const prevOpen = useRef(open);
 
   const handleMarkerDrag = () => {
     if (markerRef.current != null) {
@@ -120,16 +106,16 @@ useEffect(() => {
   };
 
   const handleSubmit = () => {
-    const tempVenueCoords = [...venueCoords, {lat: clubs[turnCount].venueData.latitude, lng: clubs[turnCount].venueData.longitude}];
-    console.log(tempVenueCoords);
+    // Update venueCoords and markerCoords
+    const tempVenueCoords = [...venueCoords, { lat: clubs[turnCount].venueData.latitude, lng: clubs[turnCount].venueData.longitude }];
+    localStorage.setItem("venueCoords", JSON.stringify(tempVenueCoords));
     setVenueCoords(tempVenueCoords);
-    Cookies.set("venueCoords", JSON.stringify(tempVenueCoords));
-    
-    const tempMarkerCoords = [...markerCoords, {lat: markerPosition.lat, lng: markerPosition.lng}];
+
+    const tempMarkerCoords = [...markerCoords, { lat: markerPosition.lat, lng: markerPosition.lng }];
+    localStorage.setItem("markerCoords", JSON.stringify(tempMarkerCoords));
     setMarkerCoords(tempMarkerCoords);
-    Cookies.set("markerCoords", JSON.stringify(tempMarkerCoords));
-    
-    
+
+    // Calculate distance and update score
     const distance_temp = calculateDistance(
       clubs[turnCount].venueData.latitude,
       clubs[turnCount].venueData.longitude,
@@ -137,7 +123,10 @@ useEffect(() => {
       markerPosition.lng
     );
     setDistance(distance_temp);
-    handleOpen();
+    setScore((currentScore) => currentScore + distance_temp);
+
+    // Open the popup
+    setOpen(true);
   };
 
   return (
@@ -187,7 +176,7 @@ useEffect(() => {
       >
         Submit Answer
       </button>
-      {(open && !roundComplete) && (
+      {open && !roundComplete && (
         <AnswerPopUp
           open={open}
           handleClose={handleClose}
@@ -202,7 +191,7 @@ useEffect(() => {
           distance={distance}
         />
       )}
-      {(open && roundComplete) && (
+      {open && roundComplete && (
         <AnswerPopUp
           open={open}
           handleClose={handleClose}
