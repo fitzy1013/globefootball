@@ -21,7 +21,7 @@ const customMarkerIcon = L.icon({
 
 function MainPage() {
   const markerRef = useRef(null);
-  const [markerPosition, setMarkerPosition] = useState([51.505, -0.09]);
+  const [markerPosition, setMarkerPosition] = useState({lat: 51.505, lng: -0.09});
   const [turnCount, setTurnCount] = useState(0);
   const [clubs, setClubs] = useState([]);
   const [score, setScore] = useState(0);
@@ -32,6 +32,9 @@ function MainPage() {
   const [markerCoords, setMarkerCoords] = useState([]);
   const [statisticsOpen, setStatisticsOpen] = useState(false);
 
+  console.log("Turn Count ", turnCount)
+
+
   useEffect(() => {
     axios
       .get("http://localhost:3003/api/clubs/random-clubs")
@@ -39,12 +42,8 @@ function MainPage() {
         setClubs(response.data);
       });
 
-    const storedScores = JSON.parse(localStorage.getItem("score")) || [];
-    console.log("Stored Scores:", storedScores);
-
     const localStorageVenueCoords = localStorage.getItem("venueCoords");
     const localStorageMarkerCoords = localStorage.getItem("markerCoords");
-    const localStorageScore = localStorage.getItem("score");
 
     if (localStorageVenueCoords && localStorageMarkerCoords) {
       const parsedVenueCoords = JSON.parse(localStorageVenueCoords);
@@ -69,9 +68,8 @@ function MainPage() {
 
   const updateScores = (newScore) => {
     const currentDate = new Date().toLocaleDateString();
-    const storedScores = JSON.parse(localStorage.getItem("scores")) || [];
-    const updatedScores = [...storedScores, { score: newScore, date: currentDate }];
-    localStorage.setItem("scores", JSON.stringify(updatedScores));
+    const updatedScores = { score: newScore, date: currentDate };
+    localStorage.setItem("score", JSON.stringify(updatedScores));
   }
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -84,13 +82,18 @@ function MainPage() {
 
   useEffect(() => {
     if (!open && prevOpen.current) {
+      setMarkerPosition()
+      setScore((currentScore) => currentScore + distance);
       if (turnCount < 4) {
-        updateScores(distance);
-        setScore((currentScore) => currentScore + distance);
+        updateScores(distance + score);
         setTurnCount((currentTurn) => currentTurn + 1);
-        
+
       } else {
         setRoundComplete(true);
+        const storedScores = JSON.parse(localStorage.getItem("scores")) || [];
+        const currentDate = new Date().toLocaleDateString();
+        const updatedScores = [...storedScores, {score: score + distance, date: currentDate}];
+        localStorage.setItem("scores", JSON.stringify(updatedScores));
         setOpen(true);
       }
     }
@@ -114,6 +117,8 @@ function MainPage() {
     const tempMarkerCoords = [...markerCoords, { lat: markerPosition.lat, lng: markerPosition.lng }];
     localStorage.setItem("markerCoords", JSON.stringify(tempMarkerCoords));
     setMarkerCoords(tempMarkerCoords);
+
+    console.log(markerPosition);
 
     // Calculate distance and update score
     const distance_temp = calculateDistance(
